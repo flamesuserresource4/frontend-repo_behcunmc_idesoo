@@ -1,23 +1,36 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useLayoutEffect } from 'react';
 import NavBar from './components/NavBar.jsx';
 import HeroSection from './components/HeroSection.jsx';
 import AccessibilityPanel from './components/AccessibilityPanel.jsx';
 import Footer from './components/Footer.jsx';
 
+function getInitialTheme() {
+  const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
+  if (stored === 'light' || stored === 'dark') return stored;
+  const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return prefersDark ? 'dark' : 'light';
+}
+
 // App handles: theme (light/dark), accessibility prefs (font size, high contrast, motion)
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [theme, setTheme] = useState(getInitialTheme);
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('fontSize') || '16px');
   const [highContrast, setHighContrast] = useState(() => localStorage.getItem('highContrast') === 'true');
   const [motionEnabled, setMotionEnabled] = useState(() => localStorage.getItem('motionEnabled') !== 'false');
 
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
-  // Apply theme to <html>
-  useEffect(() => {
+  // Apply theme to <html> ASAP to avoid flash
+  useLayoutEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') root.classList.add('dark');
     else root.classList.remove('dark');
+    // Hint browsers for form controls, scrollbars on mobile
+    root.style.colorScheme = theme;
+  }, [theme]);
+
+  // Persist theme
+  useEffect(() => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -40,7 +53,6 @@ export default function App() {
   }, [motionEnabled]);
 
   const onToggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
-
   const onOpenAccessibility = () => setAccessibilityOpen(true);
 
   const gradientBg = useMemo(() => {
@@ -67,16 +79,16 @@ export default function App() {
       <main id="main" className="min-h-screen">
         <HeroSection highContrast={highContrast} motionEnabled={motionEnabled} />
 
-        <section id="generate" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+        <section id="generate" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <div
-            className={`rounded-2xl p-8 border ${
+            className={`rounded-2xl p-6 sm:p-8 border ${
               highContrast
                 ? 'bg-white text-black border-black'
                 : 'bg-white/70 dark:bg-zinc-900/70 backdrop-blur border-zinc-200 dark:border-zinc-800 shadow-lg'
             }`}
           >
-            <h2 className="text-2xl font-semibold">How it works</h2>
-            <p className="mt-3 text-zinc-700 dark:text-zinc-300">
+            <h2 className="text-xl sm:text-2xl font-semibold">How it works</h2>
+            <p className="mt-3 text-sm sm:text-base text-zinc-700 dark:text-zinc-300">
               Take a quick mood and personality quiz. We’ll curate a glossy cube filled with images, videos, audio, quotes, and articles. Save cubes to your dashboard and revisit your vibe anytime.
             </p>
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -87,7 +99,7 @@ export default function App() {
               ].map((c) => (
                 <div
                   key={c.title}
-                  className={`rounded-xl p-5 border ${
+                  className={`rounded-xl p-4 sm:p-5 border ${
                     highContrast
                       ? 'bg-white text-black border-black'
                       : 'bg-white/70 dark:bg-zinc-900/70 border-zinc-200 dark:border-zinc-800'
